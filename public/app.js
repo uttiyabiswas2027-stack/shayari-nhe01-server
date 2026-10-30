@@ -19,7 +19,7 @@
   }
 
   function show(id) {
-    ["onboarding", "home", "poem", "favs"].forEach((s) => $(s).classList.toggle("hidden", s !== id));
+    ["onboarding", "home", "poem", "favs", "chat"].forEach((s) => $(s).classList.toggle("hidden", s !== id));
   }
 
   function greet() {
@@ -108,6 +108,69 @@
       list.appendChild(d);
     });
   }
+
+  /* ---- chat ---- */
+  function chatHistory() { return (state.chat || []).slice(-10); }
+
+  function addChatBubble(who, text) {
+    const log = $("chatLog");
+    const d = document.createElement("div");
+    d.className = "bubble " + who;
+    d.textContent = text;
+    log.appendChild(d);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function renderChat() {
+    const log = $("chatLog");
+    log.innerHTML = "";
+    (state.chat || []).forEach((m) => addChatBubble(m.role === "user" ? "me" : "her", m.text));
+    if (!(state.chat || []).length) {
+      addChatBubble("her", "Hi " + state.name + ". I'm here - how is your heart tonight?");
+    }
+  }
+
+  async function sendChat() {
+    const inp = $("chatInput");
+    const msg = inp.value.trim();
+    if (!msg) return;
+    inp.value = "";
+    state.chat = state.chat || [];
+    state.chat.push({ role: "user", text: msg });
+    store.set(state);
+    addChatBubble("me", msg);
+    const thinking = document.createElement("div");
+    thinking.className = "bubble her faint";
+    thinking.textContent = "...";
+    $("chatLog").appendChild(thinking);
+    $("chatLog").scrollTop = $("chatLog").scrollHeight;
+    let reply = "I'm here with you. Tell me more?", src = "notebook";
+    try {
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), 20000);
+      const r = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ message: msg, name: state.name || "friend", mood: state.lastMood || "", history: chatHistory() }),
+        signal: ctl.signal
+      });
+      clearTimeout(t);
+      if (r.ok) {
+        const j = await r.json();
+        if (j.reply) { reply = j.reply; src = j.source === "gemini" ? "gemini" : "notebook"; }
+      }
+    } catch (e) {}
+    thinking.remove();
+    addChatBubble("her", reply);
+    state.chat.push({ role: "model", text: reply });
+    if (state.chat.length > 40) state.chat = state.chat.slice(-40);
+    store.set(state);
+  }
+
+  $("chatLink").onclick = () => { renderChat(); show("chat"); };
+  $("chatSend").onclick = () => sendChat();
+  $("chatInput").addEventListener("keydown", (e) => { if (e.key === "Enter") sendChat(); });
+  $("chatBack").onclick = () => { greet(); show("home"); };
 
   $("startBtn").onclick = () => {
     const name = $("nameInput").value.trim();
