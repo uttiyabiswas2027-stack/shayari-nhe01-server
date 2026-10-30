@@ -70,3 +70,12 @@ details p { margin-top: 10px; }
 .fav .poemline { font-size: 17px; }
 .fav .note { margin: 8px 0 0; }
 .fav .when { color: #6b7c94; font-size: 11px; font-family: Arial, sans-serif; margin-top: 8px; }
+
+/* ---- chat ---- */
+.chatlog { max-height: 46vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin: 12px 0; padding: 4px 2px; }
+.bubble { max-width: 82%; padding: 9px 13px; border-radius: 14px; line-height: 1.45; font-size: 15px; white-space: pre-wrap; }
+.bubble.her { align-self: flex-start; background: rgba(255,255,255,0.08); border-bottom-left-radius: 4px; }
+.bubble.me { align-self: flex-end; background: rgba(214,164,96,0.25); border-bottom-right-radius: 4px; }
+.bubble.faint { opacity: 0.5; }
+.chatrow { display: flex; gap: 8px; }
+.chatrow input { flex: 1; }
