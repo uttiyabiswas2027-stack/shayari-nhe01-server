@@ -1,0 +1,8 @@
+{
+  "name": "shayari-nhe01-server",
+  "version": "1.0.0",
+  "description": "Shayari NHE 01 companion demo - static app + Gemini poem API (PM101 capstone)",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" }
+}
