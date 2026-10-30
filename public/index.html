@@ -25,6 +25,7 @@
     <p class="sub">How does tonight feel?</p>
     <div id="moods" class="moods"></div>
     <p id="favLinkWrap" class="favlink hidden"><button id="favLink" class="ghost small">poems you kept</button></p>
+    <p class="favlink"><button id="chatLink" class="ghost small">just talk to her</button></p>
   </section>
 
   <section id="poem" class="card hidden">
@@ -48,6 +49,17 @@
     <p class="kicker">Poems you kept</p>
     <div id="favList"></div>
     <div class="row"><button id="favBack" class="ghost">back</button></div>
+  </section>
+
+  <section id="chat" class="card hidden">
+    <p class="kicker">Talking with Shayari</p>
+    <div id="chatLog" class="chatlog"></div>
+    <div class="chatrow">
+      <input id="chatInput" type="text" maxlength="500" placeholder="say anything..." autocomplete="off">
+      <button id="chatSend">send</button>
+    </div>
+    <p class="memory">She is an AI - openly so. Chats stay in this browser only.</p>
+    <div class="row"><button id="chatBack" class="ghost">back</button></div>
   </section>
 
   <section id="about" class="card">
