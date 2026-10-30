@@ -89,9 +89,10 @@
     $("srcBadge").textContent = p.source === "gemini" ? "written for you, just now" : "from her notebook";
     state.poemCount = (state.poemCount || 0) + 1;
     store.set(state);
+    var pc = state.poemCount;
     $("memoryNote").textContent =
       "She remembers (only in this browser): " + state.name + " - visit " + state.visits +
-      " - " + state.poemCount + " poems shared - last mood: " + SHAYARI[state.lastMood].label + ".";
+      " - " + pc + (pc === 1 ? " poem shared" : " poems shared") + " - last mood: " + SHAYARI[state.lastMood].label + ".";
     think.classList.add("hidden");
     block.classList.remove("fading");
   }
