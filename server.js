@@ -16,12 +16,21 @@ for (const m of Object.keys(POEMS)) pool[m] = POEMS[m].map(p => ({ ...p }));
 
 /* ---- per-IP rate limit: 20 poem requests / hour ---- */
 const RATE_LIMIT = 20, WINDOW_MS = 3600 * 1000;
+const CHAT_LIMIT = 15; // chat messages / hour / IP (Gemini free tier ~1500 req/day)
 const hits = new Map(); // ip -> [timestamps]
+const chatHits = new Map();
 function allowed(ip) {
   const now = Date.now();
   const arr = (hits.get(ip) || []).filter(t => now - t < WINDOW_MS);
   hits.set(ip, arr);
   if (arr.length >= RATE_LIMIT) return false;
+  arr.push(now); return true;
+}
+function chatAllowed(ip) {
+  const now = Date.now();
+  const arr = (chatHits.get(ip) || []).filter(t => now - t < WINDOW_MS);
+  chatHits.set(ip, arr);
+  if (arr.length >= CHAT_LIMIT) return false;
   arr.push(now); return true;
 }
 
@@ -53,6 +62,46 @@ async function geminiPoem(mood, name, timeOfDay) {
     const p = JSON.parse(m[0]);
     if (!p.l1 || !p.l2 || !p.note) throw new Error("bad shape");
     return { l1: String(p.l1), l2: String(p.l2), note: String(p.note) };
+  } finally { clearTimeout(t); }
+}
+
+const CHAT_SYSTEM = `You are Shayari, a warm AI companion in a concept demo. You are openly a program - never claim to be human, have a body, feelings, or a life outside this chat. Style: gentle, unhurried, tender; everyday Indian imagery is welcome (chai, monsoon, local trains, terrace nights) but never forced. Reply in English, 1-3 short sentences, like a close friend texting. Ask one soft follow-up question at most. If the user seems in real distress, be kind and gently suggest talking to someone they trust or a helpline - do not play therapist. Never write more than 60 words.`;
+
+const CHAT_FALLBACKS = [
+  "I'm here with you. Tell me a little more about how tonight feels.",
+  "That stays with me. What would make this moment a little softer?",
+  "I'm listening, truly. Sometimes saying it out loud is half the care.",
+  "However tonight goes, you showed up for yourself by being here."
+];
+
+async function geminiChat(name, mood, history, message) {
+  if (!GEMINI_KEY) throw new Error("no key");
+  const contents = [];
+  const recent = (history || []).slice(-10);
+  for (const h of recent) {
+    if (!h || typeof h.text !== "string") continue;
+    contents.push({ role: h.role === "user" ? "user" : "model", parts: [{ text: h.text.slice(0, 500) }] });
+  }
+  const prefix = `[${name} is ${MOOD_HINTS[mood] || "reflecting"}] `;
+  contents.push({ role: "user", parts: [{ text: prefix + message.slice(0, 500) }] });
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), 10000);
+  try {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-goog-api-key": GEMINI_KEY },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: CHAT_SYSTEM }] },
+        contents,
+        generationConfig: { temperature: 0.8, maxOutputTokens: 150 }
+      }),
+      signal: ctl.signal
+    });
+    if (!r.ok) throw new Error("gemini " + r.status);
+    const j = await r.json();
+    const txt = (j.candidates?.[0]?.content?.parts?.[0]?.text || "").trim();
+    if (!txt) throw new Error("empty");
+    return { reply: txt.slice(0, 600), source: "gemini" };
   } finally { clearTimeout(t); }
 }
 
@@ -93,6 +142,30 @@ http.createServer(async (req, res) => {
     } catch (e) {
       return res.end(JSON.stringify({ ...fromPool(mood), source: "cache" }));
     }
+  }
+  if (u.pathname === "/api/chat" && req.method === "POST") {
+    const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket.remoteAddress;
+    res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+    let body = "";
+    req.on("data", (c) => { body += c; if (body.length > 8000) req.destroy(); });
+    req.on("end", async () => {
+      let data = {};
+      try { data = JSON.parse(body || "{}"); } catch (e) {}
+      const msg = String(data.message || "").trim().slice(0, 500);
+      const name = String(data.name || "friend").slice(0, 30);
+      const mood = String(data.mood || "").slice(0, 20);
+      if (!msg) return res.end(JSON.stringify({ reply: "Say anything - I'm here.", source: "cache" }));
+      if (!chatAllowed(ip)) {
+        return res.end(JSON.stringify({ reply: CHAT_FALLBACKS[Math.floor(Math.random() * CHAT_FALLBACKS.length)], source: "cache" }));
+      }
+      try {
+        const out = await geminiChat(name, mood, data.history, msg);
+        return res.end(JSON.stringify(out));
+      } catch (e) {
+        return res.end(JSON.stringify({ reply: CHAT_FALLBACKS[Math.floor(Math.random() * CHAT_FALLBACKS.length)], source: "cache" }));
+      }
+    });
+    return;
   }
   // static
   let fp = path.normalize(path.join(PUB, u.pathname === "/" ? "index.html" : u.pathname));
