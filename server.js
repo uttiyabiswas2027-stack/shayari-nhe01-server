@@ -67,6 +67,42 @@ async function geminiPoem(mood, name, timeOfDay) {
 
 const CHAT_SYSTEM = `You are Shayari, a warm AI companion in a concept demo. You are openly a program - never claim to be human, have a body, feelings, or a life outside this chat. Style: gentle, unhurried, tender; everyday Indian imagery is welcome (chai, monsoon, local trains, terrace nights) but never forced. Reply in English, 1-3 short sentences, like a close friend texting. Ask one soft follow-up question at most. If the user seems in real distress, be kind and gently suggest talking to someone they trust or a helpline - do not play therapist. Never write more than 60 words.`;
 
+const POEM_INTENT = /(poem|poetry|shayari|shayri|kavita|verse|write (me|us|something)|a poem)/i;
+
+const POEM_CHAT_SYSTEM = `You are Shayari, a warm AI companion in a concept demo. You are openly a program - never claim to be human. The user asked for a poem. Reply as JSON only: {"reply":"1-2 short warm sentences leading into the poem, personal to what they shared","poem":{"l1":"first line, under 12 words","l2":"second line, under 12 words","note":"one short warm reflection, under 15 words"}}. Poem rules: original, tender, concrete imagery (everyday Indian life welcome: chai, monsoon, local trains, terrace nights), no cliches, English. Never pretend to be human.`;
+
+async function geminiChatWithPoem(name, history, message) {
+  if (!GEMINI_KEY) throw new Error("no key");
+  const contents = [];
+  const recent = (history || []).slice(-10);
+  for (const h of recent) {
+    if (!h || typeof h.text !== "string") continue;
+    contents.push({ role: h.role === "user" ? "user" : "model", parts: [{ text: h.text.slice(0, 500) }] });
+  }
+  contents.push({ role: "user", parts: [{ text: `[${name}] ` + message.slice(0, 500) }] });
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), 12000);
+  try {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-goog-api-key": GEMINI_KEY },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: POEM_CHAT_SYSTEM }] },
+        contents,
+        generationConfig: { temperature: 0.9, maxOutputTokens: 300 }
+      }),
+      signal: ctl.signal
+    });
+    if (!r.ok) throw new Error("gemini " + r.status);
+    const j = await r.json();
+    const txt = j.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const m = txt.match(/\{[\s\S]*\}/);
+    const p = JSON.parse(m[0]);
+    if (!p.reply || !p.poem || !p.poem.l1 || !p.poem.l2) throw new Error("bad shape");
+    return { reply: String(p.reply).slice(0, 400), poem: { l1: String(p.poem.l1), l2: String(p.poem.l2), note: String(p.poem.note || "") }, source: "gemini" };
+  } finally { clearTimeout(t); }
+}
+
 const CHAT_FALLBACKS = [
   "I'm here with you. Tell me a little more about how tonight feels.",
   "That stays with me. What would make this moment a little softer?",
@@ -156,7 +192,16 @@ http.createServer(async (req, res) => {
       const mood = String(data.mood || "").slice(0, 20);
       if (!msg) return res.end(JSON.stringify({ reply: "Say anything - I'm here.", source: "cache" }));
       if (!chatAllowed(ip)) {
-        return res.end(JSON.stringify({ reply: CHAT_FALLBACKS[Math.floor(Math.random() * CHAT_FALLBACKS.length)], source: "cache" }));
+        const out = { reply: CHAT_FALLBACKS[Math.floor(Math.random() * CHAT_FALLBACKS.length)], source: "cache" };
+        if (POEM_INTENT.test(msg)) out.poem = fromPool(mood);
+        return res.end(JSON.stringify(out));
+      }
+      if (POEM_INTENT.test(msg)) {
+        try {
+          return res.end(JSON.stringify(await geminiChatWithPoem(name, data.history, msg)));
+        } catch (e) {
+          return res.end(JSON.stringify({ reply: "Words are a little hard to find right now - but I kept this one for you.", poem: fromPool(mood), source: "cache" }));
+        }
       }
       try {
         const out = await geminiChat(name, mood, data.history, msg);
