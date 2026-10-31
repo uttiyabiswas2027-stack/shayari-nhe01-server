@@ -79,3 +79,18 @@ details p { margin-top: 10px; }
 .bubble.faint { opacity: 0.5; }
 .chatrow { display: flex; gap: 8px; }
 .chatrow input { flex: 1; }
+
+/* ---- chat-first layout ---- */
+.topbar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.topbar h1 { margin: 0; font-size: 28px; }
+.topactions { display: flex; gap: 8px; }
+.chatmain { display: flex; flex-direction: column; }
+.chatmain .chatlog { max-height: 52vh; min-height: 40vh; }
+.chatdock { position: sticky; bottom: 0; padding-top: 8px; background: inherit; }
+.chip { margin: 0 0 8px 0; padding: 7px 14px; border-radius: 999px; border: 1px solid rgba(214,164,96,0.5); background: transparent; color: inherit; cursor: pointer; font-size: 13px; }
+.chip:hover { background: rgba(214,164,96,0.15); }
+.poemcard { border: 1px solid rgba(214,164,96,0.4); background: rgba(214,164,96,0.08); }
+.poemcard .poemline { font-size: 17px; font-style: italic; margin: 4px 0; }
+.poemcard .note { margin: 6px 0 2px 0; opacity: 0.85; font-size: 13px; }
+.poemcard .badge { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.6; margin: 6px 0; }
+.poemcard button { margin-top: 4px; }
