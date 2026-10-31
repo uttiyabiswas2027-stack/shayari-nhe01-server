@@ -4,45 +4,31 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Shayari - a companion who remembers</title>
-<meta name="description" content="A fully disclosed AI-companion concept demo for the PM101 capstone: she remembers you, checks in, and writes a poem for your mood.">
+<meta name="description" content="A fully disclosed AI-companion concept demo for the PM101 capstone: talk with Shayari, she remembers you, and she writes poems for your moments.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <main id="app">
-  <section id="onboarding" class="card hidden">
-    <p class="kicker">Shayari &middot; NHE 01 concept demo</p>
-    <h1>Hello. I'm Shayari.</h1>
-    <p class="sub">A companion who remembers - fully disclosed as a program, never a person.</p>
-    <label for="nameInput">What should I call you?</label>
-    <input id="nameInput" type="text" maxlength="30" placeholder="your name" autocomplete="off">
-    <button id="startBtn">Begin</button>
-  </section>
-
-  <section id="home" class="card hidden">
-    <p class="kicker">Shayari &middot; NHE 01 concept demo</p>
-    <h1 id="greeting"></h1>
-    <p id="checkin" class="checkin"></p>
-    <p class="sub">How does tonight feel?</p>
-    <div id="moods" class="moods"></div>
-    <p id="favLinkWrap" class="favlink hidden"><button id="favLink" class="ghost small">poems you kept</button></p>
-    <p class="favlink"><button id="chatLink" class="ghost small">just talk to her</button></p>
-  </section>
-
-  <section id="poem" class="card hidden">
-    <p class="kicker" id="poemMood"></p>
-    <blockquote id="poemBlock">
-      <p id="line1" class="poemline"></p>
-      <p id="line2" class="poemline"></p>
-      <p id="note" class="note"></p>
-      <p id="srcBadge" class="badge"></p>
-    </blockquote>
-    <p id="thinking" class="thinking hidden">she is writing for you&hellip;</p>
-    <div class="row">
-      <button id="moreBtn">one more</button>
-      <button id="keepBtn" class="ghost">keep this one</button>
-      <button id="moodBtn" class="ghost">change mood</button>
+  <header class="topbar">
+    <div>
+      <p class="kicker">Shayari &middot; NHE 01 concept demo</p>
+      <h1 id="chatTitle">Shayari</h1>
     </div>
-    <p id="memoryNote" class="memory"></p>
+    <div class="topactions">
+      <button id="favLink" class="ghost small hidden">poems you kept</button>
+    </div>
+  </header>
+
+  <section id="chat" class="chatmain">
+    <div id="chatLog" class="chatlog"></div>
+    <div class="chatdock">
+      <button id="poemChip" class="chip">a poem for tonight</button>
+      <div class="chatrow">
+        <input id="chatInput" type="text" maxlength="500" placeholder="say anything..." autocomplete="off">
+        <button id="chatSend">send</button>
+      </div>
+      <p class="memory">She is an AI - openly so. Everything stays in this browser only.</p>
+    </div>
   </section>
 
   <section id="favs" class="card hidden">
@@ -51,21 +37,10 @@
     <div class="row"><button id="favBack" class="ghost">back</button></div>
   </section>
 
-  <section id="chat" class="card hidden">
-    <p class="kicker">Talking with Shayari</p>
-    <div id="chatLog" class="chatlog"></div>
-    <div class="chatrow">
-      <input id="chatInput" type="text" maxlength="500" placeholder="say anything..." autocomplete="off">
-      <button id="chatSend">send</button>
-    </div>
-    <p class="memory">She is an AI - openly so. Chats stay in this browser only.</p>
-    <div class="row"><button id="chatBack" class="ghost">back</button></div>
-  </section>
-
   <section id="about" class="card">
     <details>
       <summary>About this demo</summary>
-      <p>A concept demo built for the PM101 capstone (Group 6, Section G, Masters' Union), alongside the live product at nhe01.projectnhe.tech. Poems are written fresh by an AI model through our own server - your name and mood are sent for that, nothing else - and when the model is resting, she reads from her notebook instead. She remembers only what stays in your own browser (localStorage) - nothing else leaves your device. Clear everything anytime: <button id="wipeBtn" class="ghost small">delete my data</button></p>
+      <p>A concept demo built for the PM101 capstone (Group 6, Section G, Masters' Union), alongside the live product at nhe01.projectnhe.tech. Replies and poems are written fresh by an AI model through our own server - your name and words are sent for that, nothing else - and when the model is resting, she reads from her notebook instead. She remembers only what stays in your own browser (localStorage). Clear everything anytime: <button id="wipeBtn" class="ghost small">delete my data</button></p>
     </details>
   </section>
 </main>
